@@ -659,25 +659,20 @@ INSERT INTO tmp_videoclub (id_copia,fecha_alquiler_texto,dni,nombre,apellido_1,a
 -- Nos aseguramos  que los DNI sean únicos para evitar la duplicación de socios.
 alter table socio add constraint unique_dni unique (dni);
 	
-	
-	
 -- Relleno socio 
 insert into socio (nombre, apellidos, fecha_nacimiento, dni)
 select distinct nombre, concat(apellido_1, ' ', apellido_2) as apellidos, cast(fecha_nacimiento as date), dni from tmp_videoclub tv;  
 
 --- Relleno genero
-
 insert into genero (valor)
 select distinct genero from tmp_videoclub tv;
 
 --- Relleno director
-
 insert into director (valor)
 select distinct director from tmp_videoclub tv; 
 
 --- Relleno pelicula
-
-alter table pelicula 
+alter table pelicula  -- Hacemos un alter, para permitir más caracteres 
 alter column titulo
 type varchar(100);
 
@@ -690,10 +685,8 @@ select distinct telefono, s.id_socio  from tmp_videoclub tv
 inner join socio s 
 on tv.dni=s.dni;
 
---- Relleno email 
-select * from email; 
-
-alter table email
+--- Relleno email  
+alter table email -- Hacemos un alter, para permitir más caracteres 
 alter column valor 
 type varchar(100); 
 
@@ -701,31 +694,22 @@ insert into email (valor, id_socio)
 select distinct email, s.id_socio from tmp_videoclub tv
 inner join socio s on s.dni=tv.dni; 
 
-select s.nombre, s.apellidos, e.valor from socio s
-inner join email e on s.id_socio=e.id_socio; 
-
 ---Relleno peliculagenero
-
 insert into peliculagenero (id_pelicula, id_genero)
 select distinct p.id_pelicula, g.id_genero  from tmp_videoclub tv
 inner join pelicula p on p.titulo = tv.titulo
-inner join genero g on g.valor = tv.genero; 
-;  
+inner join genero g on g.valor = tv.genero;  
 
 ---Relleno peliculadirector
-
 insert into peliculadirector (id_pelicula, id_director)
 select distinct p.id_pelicula, d.id_director from tmp_videoclub tv 
 inner join pelicula p on p.titulo = tv.titulo
 inner join director d on tv.director = d.valor; 
 
 --Relleno copia
-
 insert into copia (id_copia, id_pelicula)
 select distinct tv.id_copia, p.id_pelicula from tmp_videoclub tv
 inner join pelicula p on p.titulo=tv.titulo; 
-
-select * from copia; 
 
 ---Relleno dirección 
 
@@ -733,18 +717,14 @@ insert into direccion (id_socio, calle, numero, piso, codigo_postal)
 select distinct s.id_socio, calle, numero, concat(piso, ' ', letra) as piso, codigo_postal  from tmp_videoclub tv
 inner join socio s on tv.dni=s.dni;
 
-select * from direccion d; 
-
 ---Relleno prestamo
 
 insert into prestamo (id_copia, id_socio, fecha_prestamo, fecha_devolucion)
 select distinct id_copia, s.id_socio, fecha_alquiler, fecha_devolucion  from tmp_videoclub tv
 inner join socio s on s.dni=tv.dni ; 
 
-select id_copia from copia
-where id_copia not in 
-(select id_copia from prestamo
-where fecha_devolucion is null);
+--Consulta:
+-- Que películas están disponibles para alquilar en este momento (no están prestadas). Necesito saber el título de la película y el número de copiasdisponibles.
 
 select p2.titulo as titulo_pelicula, COUNT(c.id_copia) as numero_copias_disponibles from copia c
 left join prestamo p on c.id_copia = p.id_copia and p.fecha_devolucion is null
