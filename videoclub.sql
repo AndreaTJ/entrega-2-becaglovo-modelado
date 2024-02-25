@@ -2,115 +2,103 @@ create schema videoclub;
 
 set schema 'videoclub';
 
+-- Creación de tabla socio
 create table socio (
     id_socio smallserial primary key,
-    nombre varchar(50) not null, 
-    apellidos varchar(50) not null, 
-    fecha_nacimiento date NOT NULL, 
-    dni varchar(15) not null
+    nombre varchar(30) not null, 
+    apellidos varchar(65) not null, 
+    fecha_nacimiento date not null, 
+    dni varchar(13) not null
 );
+-- Restricción de unicidad para DNI - Un dni solo puede estar asociado a un socio. 
+alter table socio add constraint unique_dni unique (dni);
 
+-- Creación de tabla direccion
 create table direccion (
-    id_socio smallint primary key,
-    calle varchar(70) not null, 
-    numero varchar(10) not null, 
-    piso varchar(10) not null,
-    codigo_postal varchar(5) not null
+    id_socio smallint primary key, --Un socio puede tener una sola dirección
+    calle varchar(80) not null, 
+    numero varchar(7) not null, 
+    piso varchar(9) not null,
+    codigo_postal varchar(5) not null -- En España, los codigos postales son de 5 digitos 
 );
 
+alter table direccion add constraint fk_direccion_socio foreign key (id_socio) references socio (id_socio);
+
+-- Creación de tabla telefono
 create table telefono (
     id_telefono smallserial primary key,
-    valor varchar(15) not null,
+    valor varchar(10) not null,
     id_socio smallint not null
 );
+alter table telefono add constraint fk_telefono_socio foreign key (id_socio) references socio (id_socio);
 
+-- Creación de tabla email
 create table email (
     id_email smallserial primary key,
-    valor varchar(40) not null,
+    valor varchar(50) not null,
     id_socio smallint not null
 );
+alter table email add constraint fk_email_socio foreign key (id_socio) references socio (id_socio);
 
+-- Creación de tabla pelicula
 create table pelicula (
     id_pelicula serial primary key,
     titulo varchar(50) not null,
     sinopsis text not null
 );
 
+-- Creación de tabla genero
 create table genero (
     id_genero smallserial primary key,
     valor varchar(50) not null
 );
 
+-- Creación de tabla director
 create table director (
     id_director smallserial primary key,
     valor varchar(70) not null
 );
 
-create table peliculagenero (
-    id_pelicula_genero serial primary key,
+-- Creación de tabla generopelicula
+create table generopelicula (
+    id_genero_pelicula serial primary key,
     id_pelicula int not null,
     id_genero smallint not null
 );
+-- Relaciones con pelicula y genero
+alter table generopelicula add constraint fk_generopelicula_pelicula foreign key (id_pelicula) references pelicula (id_pelicula);
+alter table generopelicula add constraint fk_generopelicula_genero foreign key (id_genero) references genero (id_genero);
 
-create table peliculadirector (
-    id_pelicula_director serial primary key,
+-- Creación de tabla directorpelicula
+create table directorpelicula (
+    id_director_pelicula serial primary key,
     id_pelicula int not null,
     id_director smallint not null
 );
 
+alter table directorpelicula add constraint fk_directorpelicula_pelicula foreign key (id_pelicula) references pelicula (id_pelicula);
+alter table directorpelicula add constraint fk_directorpelicula_director foreign key (id_director) references director (id_director);
+
+-- Creación de tabla copia
 create table copia (
     id_copia smallint primary key,
     id_pelicula int not null
 );
+alter table copia add constraint fk_copia_pelicula foreign key (id_pelicula) references pelicula (id_pelicula);
 
-create table prestamo (
+-- Creación de tabla prestamopelicula
+create table prestamopelicula (
     id_prestamo serial primary key,
     id_copia smallint not null,
     id_socio smallint not null,
     fecha_prestamo date not null,
     fecha_devolucion date null
 );
+-- Relaciones con copia y socio
+alter table prestamopelicula add constraint fk_prestamopelicula_copia foreign key (id_copia) references copia (id_copia);
+alter table prestamopelicula add constraint fk_prestamopelicula_socio foreign key (id_socio) references socio (id_socio);
 
-alter table telefono 
-add constraint fk_telefono_socio 
-foreign key (id_socio) references socio (id_socio);
-
-alter table email 
-add constraint fk_email_socio 
-foreign key (id_socio) references socio (id_socio);
-
-alter table direccion 
-add constraint fk_direccion_socio 
-foreign key (id_socio) references socio (id_socio);
-
-alter table peliculagenero 
-add constraint fk_peliculagenero_pelicula 
-foreign key (id_pelicula) references pelicula (id_pelicula);
-
-alter table peliculagenero 
-add constraint fk_peliculagenero_genero 
-foreign key (id_genero) references genero (id_genero);
-
-alter table peliculadirector
-add constraint fk_peliculadirector_pelicula 
-foreign key (id_pelicula) references pelicula (id_pelicula);
-
-alter table peliculadirector 
-add constraint fk_peliculadirector_director 
-foreign key (id_director) references director (id_director);
-
-alter table copia 
-add constraint fk_copia_pelicula 
-foreign key (id_pelicula) references pelicula (id_pelicula);
-
-alter table prestamo 
-add constraint fk_prestamo_copia 
-foreign key (id_copia) references copia (id_copia);
-
-alter table prestamo 
-add constraint fk_prestamo_socio 
-foreign key (id_socio) references socio (id_socio);
-
+-- Tabla muestra de datos
  
 CREATE TABLE tmp_videoclub (
 	id_copia int4 NULL,
@@ -655,81 +643,84 @@ INSERT INTO tmp_videoclub (id_copia,fecha_alquiler_texto,dni,nombre,apellido_1,a
 	 (308,'2024-01-25','1638778M','Angel','Lorenzo','Caballero','angel.lorenzo.caballero@gmail.com','698073069','47008','2011-07-30','82','1','Izq.','Sol','1Izq.','El bazar de las sorpresas','Comedia','Alfred Kralik es el tímido jefe de vendedores de Matuschek y Compañía, una tienda de Budapest. Todas las mañanas, los empleados esperan juntos la llegada de su jefe, Hugo Matuschek. A pesar de su timidez, Alfred responde al anuncio de un periódico y mantiene un romance por carta. Su jefe decide contratar a una tal Klara Novak en contra de la opinión de Alfred. En el trabajo, Alfred discute constantemente con ella, sin sospechar que es su corresponsal secreta.','Ernst Lubitsch','2024-01-25',NULL);
 
 
+-- RELLENO DATOS
 
--- Nos aseguramos  que los DNI sean únicos para evitar la duplicación de socios.
-alter table socio add constraint unique_dni unique (dni);
-	
--- Relleno socio 
-insert into socio (nombre, apellidos, fecha_nacimiento, dni)
-select distinct nombre, concat(apellido_1, ' ', apellido_2) as apellidos, cast(fecha_nacimiento as date), dni from tmp_videoclub tv;  
-
---- Relleno genero
+-- Insertando generos
 insert into genero (valor)
-select distinct genero from tmp_videoclub tv;
+select distinct genero from tmp_videoclub;
 
---- Relleno director
+-- Insertando directores
 insert into director (valor)
-select distinct director from tmp_videoclub tv; 
+select distinct director from tmp_videoclub;
 
---- Relleno pelicula
-alter table pelicula  -- Hacemos un alter, para permitir más caracteres 
+-- Insertando peliculas
+
+-- Modifico columna titulo para que acepte titulos de más hasta 90 caracteres. 
+alter table pelicula 
 alter column titulo
-type varchar(100);
+type varchar(90);
 
 insert into pelicula (titulo, sinopsis)
-select distinct titulo, sinopsis  from tmp_videoclub tv;
+select distinct titulo, sinopsis from tmp_videoclub;
 
---- Relleno telefono 
+---Insertando generopelicula
+insert into generopelicula (id_pelicula, id_genero)
+select distinct p.id_pelicula, g.id_genero  from tmp_videoclub tv
+inner join pelicula p on p.titulo = tv.titulo
+inner join genero g on g.valor = tv.genero;  
+
+---Insertando directorpelicula
+insert into directorpelicula (id_pelicula, id_director)
+select distinct p.id_pelicula, d.id_director from tmp_videoclub tv 
+inner join pelicula p on p.titulo = tv.titulo
+inner join director d on tv.director = d.valor; 
+
+-- Insertando socios 
+insert into socio (nombre, apellidos, fecha_nacimiento, dni)
+select distinct nombre, concat(apellido_1, ' ', apellido_2) as apellidos, cast(fecha_nacimiento as date), dni from tmp_videoclub;
+
+-- Insertando telefono 
 insert into telefono (valor, id_socio)
-select distinct telefono, s.id_socio  from tmp_videoclub tv
-inner join socio s 
-on tv.dni=s.dni;
+select distinct telefono, s.id_socio from tmp_videoclub tv
+inner join socio s on tv.dni=s.dni;
 
---- Relleno email  
-alter table email -- Hacemos un alter, para permitir más caracteres 
+-- Insertando email
+-- Modifico columna valor para que acepte valores de más hasta 90 caracteres. 
+alter table email
 alter column valor 
-type varchar(100); 
+type varchar(90); 
 
 insert into email (valor, id_socio)
 select distinct email, s.id_socio from tmp_videoclub tv
 inner join socio s on s.dni=tv.dni; 
 
----Relleno peliculagenero
-insert into peliculagenero (id_pelicula, id_genero)
-select distinct p.id_pelicula, g.id_genero  from tmp_videoclub tv
-inner join pelicula p on p.titulo = tv.titulo
-inner join genero g on g.valor = tv.genero;  
+-- Insertando direcciones
+insert into direccion (id_socio, calle, numero, piso, codigo_postal)
+select distinct s.id_socio, calle, numero, concat(piso, ' ', letra) as piso, codigo_postal from tmp_videoclub tv
+inner join socio s on tv.dni=s.dni;
 
----Relleno peliculadirector
-insert into peliculadirector (id_pelicula, id_director)
-select distinct p.id_pelicula, d.id_director from tmp_videoclub tv 
-inner join pelicula p on p.titulo = tv.titulo
-inner join director d on tv.director = d.valor; 
-
---Relleno copia
+--Insertando copias
 insert into copia (id_copia, id_pelicula)
 select distinct tv.id_copia, p.id_pelicula from tmp_videoclub tv
 inner join pelicula p on p.titulo=tv.titulo; 
 
----Relleno dirección 
+-- Insertando prestamos.
+insert into prestamopelicula (id_copia, id_socio, fecha_prestamo, fecha_devolucion)
+select distinct id_copia, s.id_socio, fecha_alquiler, fecha_devolucion from tmp_videoclub tv
+inner join socio s on s.dni=tv.dni;
 
-insert into direccion (id_socio, calle, numero, piso, codigo_postal)
-select distinct s.id_socio, calle, numero, concat(piso, ' ', letra) as piso, codigo_postal  from tmp_videoclub tv
-inner join socio s on tv.dni=s.dni;
+select * from prestamopelicula; 
 
----Relleno prestamo
+-- Las que no estan disponibles 
+select p.titulo as titulo_pelicula, count(co.id_copia) - count(pp.fecha_devolucion is null or null) as num_copias_no_disponibles from pelicula p
+inner join copia co on p.id_pelicula = co.id_pelicula
+left join prestamopelicula pp on co.id_copia = pp.id_copia and pp.fecha_devolucion is null
+group by p.titulo
+order by p.titulo;
 
-insert into prestamo (id_copia, id_socio, fecha_prestamo, fecha_devolucion)
-select distinct id_copia, s.id_socio, fecha_alquiler, fecha_devolucion  from tmp_videoclub tv
-inner join socio s on s.dni=tv.dni ; 
-
---Consulta:
--- Que películas están disponibles para alquilar en este momento (no están prestadas). Necesito saber el título de la película y el número de copiasdisponibles.
-
-select p2.titulo as titulo_pelicula, COUNT(c.id_copia) as numero_copias_disponibles from copia c
-left join prestamo p on c.id_copia = p.id_copia and p.fecha_devolucion is null
-inner join pelicula p2 on c.id_pelicula = p2.id_pelicula
+-- Consulta:  películas disponibles para ser alquiladas en este momento. 
+select p2.titulo as titulo_pelicula, COUNT(co.id_copia) as num_copias_disponibles from copia co
+left join prestamopelicula p on co.id_copia = p.id_copia and p.fecha_devolucion is null
+inner join pelicula p2 on co.id_pelicula = p2.id_pelicula
 where p.id_copia is null
 group by p2.titulo;
-
-
